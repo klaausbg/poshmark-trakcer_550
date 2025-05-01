@@ -1,0 +1,10 @@
+# Temporary workflow to clear GitHub cache
+name: Temp cleanup
+on:
+  workflow_dispatch:
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean step
+        run: echo "Cleaning..."
