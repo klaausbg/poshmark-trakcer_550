@@ -2,7 +2,7 @@ name: Run HyVent Bot
 
 on:
   schedule:
-   - cron: '*/10 * * * *' # 11am and 11pm Brazil time
+   - cron: '0 14,2 * * *'  # 11am and 11pm Brazil time
   workflow_dispatch:
 
 jobs:
