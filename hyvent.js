@@ -2,7 +2,7 @@ require("dotenv").config();
 const puppeteer = require("puppeteer");
 
 const fs = require("fs");
-const SEEN_FILE = "seen_links.json";
+const SEEN_FILE = "seen_hyvent_links.json";
 
 let seenLinks = [];
 if (fs.existsSync(SEEN_FILE)) {
