@@ -1,0 +1,17 @@
+name: Run HyVent Bot
+
+on:
+  schedule:
+   - cron: '*/10 * * * *' # 11am and 11pm Brazil time
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: node hyventjkt.js
