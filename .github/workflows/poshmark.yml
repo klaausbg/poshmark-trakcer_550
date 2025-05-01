@@ -2,8 +2,8 @@ name: Run Poshmark Bot Every 12h
 
 on:
   schedule:
-    - cron: '*/2 * * * *'  # runs every 5 minutes
-  workflow_dispatch: # Allows manual run via GitHub
+    - cron: '0 13,1 * * *'  # 10am and 10pm Brazil time
+  workflow_dispatch:        # Allows manual trigger
 
 jobs:
   run:
