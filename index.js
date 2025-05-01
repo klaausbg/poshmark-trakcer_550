@@ -1,6 +1,14 @@
 require("dotenv").config();
 const puppeteer = require("puppeteer");
 
+const fs = require("fs");
+const SEEN_FILE = "seen_links.json";
+
+let seenLinks = [];
+if (fs.existsSync(SEEN_FILE)) {
+  seenLinks = JSON.parse(fs.readFileSync(SEEN_FILE));
+}
+
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -45,8 +53,6 @@ async function checkPoshmark() {
       window.scrollBy(0, window.innerHeight);
     });
 
-    await page.waitForTimeout(3000);
-
     const newHeight = await page.evaluate(() => document.body.scrollHeight);
 
     if (newHeight === previousHeight) {
@@ -73,12 +79,17 @@ async function checkPoshmark() {
   const items = [];
   const productPage = await browser.newPage();
   let matchCount = 0;
-  const maxMatches = 4;
+  const maxMatches = 10;
 
   let firstMatch = true;
 
   for (let i = 0; i < links.length && matchCount < maxMatches; i++) {
     const url = links[i];
+
+    if (seenLinks.includes(url)) {
+      console.log("🔁 Already sent, skipping:", url);
+      continue;
+    }
 
     try {
       console.log(`🔍 Visiting ${links[i]}`);
@@ -107,7 +118,15 @@ async function checkPoshmark() {
         console.log(`   💵 Preço: ${item.price}`);
         console.log(`   📐 Tamanho: ${item.size}`);
 
-        const flaws = ["flaw", "flaws", "flawed", "stain", "damaged"];
+        const flaws = [
+          "flaw",
+          "flaws",
+          "flawed",
+          "polartec",
+          "vest",
+          "stain",
+          "damaged",
+        ];
 
         const titleLower = item.title.toLowerCase();
         const hasFlaw = flaws.some((word) => titleLower.includes(word));
@@ -129,6 +148,8 @@ async function checkPoshmark() {
           const message = `🧥 *${item.title}*\n💰 ${numericPrice}\n📏 Size: ${item.size}\n🔗 ${item.link}`;
           await sendTelegramMessage(message);
           matchCount++;
+          seenLinks.push(item.link);
+
           console.log(
             `✅ Enviado ao Telegram! (${matchCount}/${maxMatches})\n`
           );
@@ -142,6 +163,8 @@ async function checkPoshmark() {
   await productPage.close();
   await browser.close();
   console.log(`📦 Final matches sent: ${matchCount}`);
+  fs.writeFileSync(SEEN_FILE, JSON.stringify(seenLinks, null, 2));
+  console.log("✅ Saved seen links to file.");
 }
 
 checkPoshmark();
