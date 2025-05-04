@@ -4,16 +4,15 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const SEEN_FILE = "seen_hyvent_links.json";
 
-let seenLinks = [];
-if (fs.existsSync(SEEN_FILE)) {
-  seenLinks = JSON.parse(fs.readFileSync(SEEN_FILE));
-}
+const { ensureTable, isSeen, markAsSeen } = require("./db");
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const POSHMARK_URL =
   "https://poshmark.com/search?query=the%20north%20face%20hyvent&sort_by=added_desc&department=Women&category=Jackets_%26_Coats&brand%5B%5D=The%20North%20Face&color%5B%5D=Black&color%5B%5D=Gray&color%5B%5D=Brown&color%5B%5D=Blue&color%5B%5D=Tan&color%5B%5D=Gold&color%5B%5D=Orange&color%5B%5D=Yellow&size%5B%5D=M&price%5B%5D=-30";
+
+await ensureTable(); // Create table if not exists
 
 async function sendTelegramMessage(message) {
   const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
@@ -89,7 +88,7 @@ async function checkPoshmark() {
   for (let i = 0; i < links.length && matchCount < maxMatches; i++) {
     const url = links[i];
 
-    if (seenLinks.includes(url)) {
+    if (await isSeen(url)) {
       console.log("🔁 Already sent, skipping:", url);
       continue;
     }
@@ -151,7 +150,7 @@ async function checkPoshmark() {
           const message = `🧥 *${item.title}*\n💰 ${numericPrice}\n📏 Size: ${item.size}\n🔗 ${item.link}`;
           await sendTelegramMessage(message);
           matchCount++;
-          seenLinks.push(item.link);
+          await markAsSeen(item.link);
 
           console.log(
             `✅ Enviado ao Telegram! (${matchCount}/${maxMatches})\n`
@@ -166,8 +165,6 @@ async function checkPoshmark() {
   await productPage.close();
   await browser.close();
   console.log(`📦 Final matches sent: ${matchCount}`);
-  fs.writeFileSync(SEEN_FILE, JSON.stringify(seenLinks, null, 2));
-  console.log("✅ Saved seen links to file.");
 }
 
 checkPoshmark();
