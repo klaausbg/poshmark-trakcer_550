@@ -1,4 +1,5 @@
 require("dotenv").config();
+const fetch = require("node-fetch");
 const puppeteer = require("puppeteer");
 
 const { ensureTable, isSeen, markAsSeen } = require("./db");
@@ -164,4 +165,7 @@ async function checkPoshmark() {
   console.log(`📦 Final matches sent: ${matchCount}`);
 }
 
-checkPoshmark();
+(async () => {
+  await ensureTable();
+  await checkPoshmark();
+})();
