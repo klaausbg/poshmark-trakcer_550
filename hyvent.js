@@ -32,8 +32,6 @@ async function sendTelegramMessage(message) {
 }
 
 async function checkPoshmark() {
-  await ensureTable();
-
   console.log("⏳ Launching Puppeteer...");
   const browser = await puppeteer.launch({
     headless: true,
@@ -73,7 +71,6 @@ async function checkPoshmark() {
   });
 
   console.log(`🔗 Found ${links.length} links`);
-
   console.log("🧾 Listing URLs:");
   console.log(links.slice(0, 2));
 
@@ -81,7 +78,6 @@ async function checkPoshmark() {
   const productPage = await browser.newPage();
   let matchCount = 0;
   const maxMatches = 10;
-
   let firstMatch = true;
 
   for (let i = 0; i < links.length && matchCount < maxMatches; i++) {
@@ -139,7 +135,7 @@ async function checkPoshmark() {
           !hasFlaw
         ) {
           if (firstMatch) {
-            await sendTelegramMessage("\u2063"); // Mensagem invisível (separadora)
+            await sendTelegramMessage("\u2063");
             await sendTelegramMessage(
               "🔔 *You got new deals!*\n\nHere are the latest jackets that match your filters:"
             );
@@ -166,7 +162,12 @@ async function checkPoshmark() {
   console.log(`📦 Final matches sent: ${matchCount}`);
 }
 
-(async () => {
-  await ensureTable();
+// ✅ MAIN FUNCTION TO RUN THE APP
+async function main() {
+  await ensureTable(); // Only runs at runtime
   await checkPoshmark();
-})();
+}
+
+main().catch((err) => {
+  console.error("❌ App crashed:", err);
+});
