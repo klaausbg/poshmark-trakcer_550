@@ -167,7 +167,3 @@ async function main() {
   await ensureTable(); // Only runs at runtime
   await checkPoshmark();
 }
-
-main().catch((err) => {
-  console.error("❌ App crashed:", err);
-});
