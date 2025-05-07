@@ -167,3 +167,5 @@ async function main() {
   await ensureTable(); // Only runs at runtime
   await checkPoshmark();
 }
+
+main();
