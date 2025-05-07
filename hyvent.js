@@ -93,7 +93,10 @@ async function checkPoshmark() {
 
     try {
       console.log(`🔍 Visiting ${links[i]}`);
-      await productPage.goto(links[i], { waitUntil: "domcontentloaded" });
+      await productPage.goto(links[i], {
+        waitUntil: "domcontentloaded",
+        timeout: 0,
+      });
       await new Promise((r) => setTimeout(r, 3000));
 
       const item = await productPage.evaluate(() => {
