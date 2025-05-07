@@ -26,6 +26,9 @@ async function sendTelegramMessage(message) {
         disable_web_page_preview: false,
       }),
     });
+
+    const data = await response.json();
+    console.log("📬 Telegram API response:", data);
   } catch (error) {
     console.error("❌ Failed to send Telegram message:", error);
   }
