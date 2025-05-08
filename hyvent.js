@@ -77,8 +77,6 @@ async function checkPoshmark() {
   console.log("🧾 Listing URLs:");
   console.log(links.slice(0, 2));
 
-  const items = [];
-  const productPage = await browser.newPage();
   let matchCount = 0;
   const maxMatches = 10;
   let firstMatch = true;
@@ -91,11 +89,12 @@ async function checkPoshmark() {
       continue;
     }
 
+    const productPage = await browser.newPage(); // 🔄 NEW TAB for each item
     try {
-      console.log(`🔍 Visiting ${links[i]}`);
-      await productPage.goto(links[i], {
+      console.log(`🔍 Visiting ${url}`);
+      await productPage.goto(url, {
         waitUntil: "domcontentloaded",
-        timeout: 0,
+        timeout: 20000, // 🔄 20-second timeout
       });
       await new Promise((r) => setTimeout(r, 3000));
 
@@ -161,9 +160,9 @@ async function checkPoshmark() {
     } catch (err) {
       console.warn(`⚠️ Failed on ${url}:`, err.message);
     }
+    await productPage.close(); // 🔄 Always close tab
   }
 
-  await productPage.close();
   await browser.close();
   console.log(`📦 Final matches sent: ${matchCount}`);
 }
