@@ -39,11 +39,15 @@ async function checkPoshmark() {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    protocolTimeout: 60000,
   });
   const page = await browser.newPage();
 
   console.log("🌐 Navigating to Poshmark...");
-  await page.goto(POSHMARK_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(POSHMARK_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 20000,
+  });
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   // Scroll to load listings
@@ -159,8 +163,9 @@ async function checkPoshmark() {
       }
     } catch (err) {
       console.warn(`⚠️ Failed on ${url}:`, err.message);
+    } finally {
+      await productPage.close(); // ✅ Always close tab
     }
-    await productPage.close(); // 🔄 Always close tab
   }
 
   await browser.close();
