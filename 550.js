@@ -1,19 +1,15 @@
 require("dotenv").config();
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const puppeteer = require("puppeteer");
 
-const fs = require("fs");
-const SEEN_FILE = "seen_links.json";
-
-let seenLinks = [];
-if (fs.existsSync(SEEN_FILE)) {
-  seenLinks = JSON.parse(fs.readFileSync(SEEN_FILE));
-}
+const { ensureTable, isSeen, markAsSeen } = require("./db");
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const POSHMARK_URL =
-  "https://poshmark.com/search?query=the%20north%20face%20550&sort_by=added_desc&department=Women&category=Jackets_%26_Coats&sub_category=Puffers&brand%5B%5D=The%20North%20Face&price%5B%5D=-50&color%5B%5D=Black&color%5B%5D=Brown&color%5B%5D=Gray&color%5B%5D=Tan&color%5B%5D=Gold&color%5B%5D=Yellow&color%5B%5D=Orange&size%5B%5D=M&size%5B%5D=S&size%5B%5D=L";
+  "https://poshmark.com/search?query=the%20north%20face%20hyvent&sort_by=added_desc&department=Women&category=Jackets_%26_Coats&brand%5B%5D=The%20North%20Face&color%5B%5D=Black&color%5B%5D=Gray&color%5B%5D=Brown&color%5B%5D=Blue&color%5B%5D=Tan&color%5B%5D=Gold&color%5B%5D=Orange&color%5B%5D=Yellow&size%5B%5D=M&price%5B%5D=-30";
 
 async function sendTelegramMessage(message) {
   const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
@@ -30,6 +26,9 @@ async function sendTelegramMessage(message) {
         disable_web_page_preview: false,
       }),
     });
+
+    const data = await response.json();
+    console.log("📬 Telegram API response:", data);
   } catch (error) {
     console.error("❌ Failed to send Telegram message:", error);
   }
@@ -40,11 +39,15 @@ async function checkPoshmark() {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    protocolTimeout: 60000,
   });
   const page = await browser.newPage();
 
   console.log("🌐 Navigating to Poshmark...");
-  await page.goto(POSHMARK_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(POSHMARK_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 20000,
+  });
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   // Scroll to load listings
@@ -75,28 +78,28 @@ async function checkPoshmark() {
   });
 
   console.log(`🔗 Found ${links.length} links`);
-
   console.log("🧾 Listing URLs:");
   console.log(links.slice(0, 2));
 
-  const items = [];
-  const productPage = await browser.newPage();
   let matchCount = 0;
   const maxMatches = 10;
-
   let firstMatch = true;
 
   for (let i = 0; i < links.length && matchCount < maxMatches; i++) {
     const url = links[i];
 
-    if (seenLinks.includes(url)) {
+    if (await isSeen(url)) {
       console.log("🔁 Already sent, skipping:", url);
       continue;
     }
 
+    const productPage = await browser.newPage(); // 🔄 NEW TAB for each item
     try {
-      console.log(`🔍 Visiting ${links[i]}`);
-      await productPage.goto(links[i], { waitUntil: "domcontentloaded" });
+      console.log(`🔍 Visiting ${url}`);
+      await productPage.goto(url, {
+        waitUntil: "domcontentloaded",
+        timeout: 20000, // 🔄 20-second timeout
+      });
       await new Promise((r) => setTimeout(r, 3000));
 
       const item = await productPage.evaluate(() => {
@@ -135,15 +138,15 @@ async function checkPoshmark() {
         const hasFlaw = flaws.some((word) => titleLower.includes(word));
 
         if (
-          item.title.toLowerCase().includes("550") &&
-          ["S", "M", "L"].includes(item.size) &&
-          numericPrice <= 50 &&
+          item.title.toLowerCase().includes("hyvent") &&
+          ["M"].includes(item.size) &&
+          numericPrice <= 30 &&
           !hasFlaw
         ) {
           if (firstMatch) {
-            await sendTelegramMessage("\u2063"); // Mensagem invisível (separadora)
+            await sendTelegramMessage("\u2063");
             await sendTelegramMessage(
-              "🔔 *You got new deals!*\n\nHere are the latest jackets that match your filters:"
+              "🔔 *You got new deals!*\n\nHere are the latest HYVENT JACKETS:"
             );
             firstMatch = false;
           }
@@ -151,7 +154,7 @@ async function checkPoshmark() {
           const message = `🧥 *${item.title}*\n💰 ${numericPrice}\n📏 Size: ${item.size}\n🔗 ${item.link}`;
           await sendTelegramMessage(message);
           matchCount++;
-          seenLinks.push(item.link);
+          await markAsSeen(item.link);
 
           console.log(
             `✅ Enviado ao Telegram! (${matchCount}/${maxMatches})\n`
@@ -160,14 +163,19 @@ async function checkPoshmark() {
       }
     } catch (err) {
       console.warn(`⚠️ Failed on ${url}:`, err.message);
+    } finally {
+      await productPage.close(); // ✅ Always close tab
     }
   }
 
-  await productPage.close();
   await browser.close();
   console.log(`📦 Final matches sent: ${matchCount}`);
-  fs.writeFileSync(SEEN_FILE, JSON.stringify(seenLinks, null, 2));
-  console.log("✅ Saved seen links to file.");
 }
 
-checkPoshmark();
+// ✅ MAIN FUNCTION TO RUN THE APP
+async function main() {
+  await ensureTable(); // Only runs at runtime
+  await checkPoshmark();
+}
+
+main();
