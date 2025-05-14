@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "hyvent.js",
   "scripts": {
-    "start": "node hyvent.js",
+    "start:hyvent": "node hyvent.js",
+    "start:550": "node 550.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -9,7 +9,7 @@ const pool = new Pool({
 
 async function ensureTable() {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS seen_links (
+    CREATE TABLE IF NOT EXISTS seen_links_hyvent (
       url TEXT PRIMARY KEY
     );
   `);
