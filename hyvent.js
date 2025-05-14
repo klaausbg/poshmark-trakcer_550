@@ -3,7 +3,7 @@ const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const puppeteer = require("puppeteer");
 
-const { ensureTable, isSeen, markAsSeen } = require("./db");
+const { ensureTable, isSeen, markAsSeen } = require("./db_hyvent");
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
