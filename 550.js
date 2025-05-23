@@ -142,7 +142,7 @@ async function checkPoshmark() {
           if (firstMatch) {
             await sendTelegramMessage("\u2063");
             await sendTelegramMessage(
-              "🔔 *You got new deals!*\n\nHere are the latest HYVENT JACKETS:"
+              "🔔 *You got new deals!*\n\nHere are the latest 550 JACKETS:"
             );
             firstMatch = false;
           }
